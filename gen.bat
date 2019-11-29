@@ -1,0 +1,1 @@
+npx schema-codegen DemoRoom.ts --csharp --output Generated/
