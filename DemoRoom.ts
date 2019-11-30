@@ -1,29 +1,7 @@
-import { Room, Client, generateId } from "colyseus";
-import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
-import { verifyToken, User, IUser } from "@colyseus/social";
+import { Room, Client } from "colyseus";
+import { Schema, type } from "@colyseus/schema";
+import { State } from "./State";
 
-class Entity extends Schema {
-  @type("uint32")
-  stateNum: number = 0
-  
-  @type("number")
-  x: number = 0;
-
-  @type("number")
-  y: number = 0;
-
-  @type("number")
-  z: number = 0;
-}
-
-class State extends Schema {
-  @type({ map: Entity })
-  entities = new MapSchema<Entity>();
-}
-
-/**
- * Demonstrate sending schema data types as messages
- */
 class Message extends Schema {
   @type("uint32") stateNum;
   @type("number") x;
@@ -32,30 +10,44 @@ class Message extends Schema {
   @type("string") msg;
 }
 
-export class DemoRoom extends Room {
+export class DemoRoom extends Room<State> {
 
-  onCreate (options: any) {
-    console.log("DemoRoom created!", options);
+  onCreate () {
+    console.log("DemoRoom created!");
 
     this.setState(new State());
-
-    this.setMetadata({
-      str: "hello",
-      number: 10
-    });
-
+    this.setSimulationInterval((dt) => this.state.update());
     this.setPatchRate(1000 / 30);
-    this.setSimulationInterval((dt) => this.update(dt));
   }
 
-  async onAuth (client, options) {
-    console.log("onAuth(), options!", options);
-    return await User.findById(verifyToken(options.token)._id);
+  onJoin (client: Client, options: any) {
+    console.log(client.sessionId, "joined!");
+    this.state.createUser(client.sessionId);
   }
 
-  onJoin (client: Client, options: any, user: IUser) {
-    console.log("client joined!", client.sessionId);
-    this.state.entities[client.sessionId] = new Entity();
+  onMessage (client: Client, data: Message) {
+    const entity = this.state.entities[client.sessionId];
+
+    // skip dead players
+    if (!entity) {
+      console.log("DEAD PLAYER ACTING...");
+      return;
+    }
+
+    console.log(data, "received from", client.sessionId);
+    
+    this.state.entities[client.sessionId].x = data.x;
+    this.state.entities[client.sessionId].y = data.y;
+    this.state.entities[client.sessionId].z = data.z;
+
+    const message = data;
+    message.msg = "Approved";
+    this.send(client, message);
+
+    console.log("x: %s y: %s z: %s", 
+                this.state.entities[client.sessionId].x,
+                this.state.entities[client.sessionId].y, 
+                this.state.entities[client.sessionId].z);
   }
 
   async onLeave (client: Client, consented: boolean) {
@@ -74,30 +66,6 @@ export class DemoRoom extends Room {
       console.log("disconnected!", client.sessionId);
       delete this.state.entities[client.sessionId];
     }
-  }
-
-  onMessage (client: Client, data: Message) {
-    console.log(data, "received from", client.sessionId);
-    console.log(this.state.entities[client.sessionId].x, "wtf");
-
-    this.state.entities[client.sessionId].x = data.x;
-    this.state.entities[client.sessionId].y = data.y;
-    this.state.entities[client.sessionId].z = data.z;
-
-    const message = data;
-    message.msg = "Approved";
-    this.send(client, message);
-
-    console.log("x: %s y: %s z: %s", 
-                this.state.entities[client.sessionId].x,
-                this.state.entities[client.sessionId].y, 
-                this.state.entities[client.sessionId].z);
-
-    //this.broadcast({ hello: "hello world" });
-  }
-
-  update (dt?: number) {
-    // console.log("num clients:", Object.keys(this.clients).length);
   }
 
   onDispose () {
