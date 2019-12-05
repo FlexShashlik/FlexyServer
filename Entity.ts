@@ -16,6 +16,7 @@ export class Entity extends Schema {
     dX: number = 0;
     dY: number = 0;
     dZ: number = 0;
+    angle: number = 0;
     dead: boolean = false;
 
     constructor(x: number, y: number, z: number) {

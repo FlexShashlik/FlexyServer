@@ -2,7 +2,7 @@ import { Room, Client } from "colyseus";
 import { Schema, type } from "@colyseus/schema";
 import { State } from "./State";
 
-class Message extends Schema {
+class MovementMessage extends Schema {
   @type("uint32") stateNum;
   @type("number") x;
   @type("number") y;
@@ -25,7 +25,7 @@ export class DemoRoom extends Room<State> {
     this.state.createUser(client.sessionId);
   }
 
-  onMessage (client: Client, data: Message) {
+  onMessage (client: Client, message: any) {
     const entity = this.state.entities[client.sessionId];
 
     // skip dead players
@@ -34,20 +34,25 @@ export class DemoRoom extends Room<State> {
       return;
     }
 
-    console.log(data, "received from", client.sessionId);
+    switch(message.command){
+      case "movement":
+          console.log(message.command, message.data, "received from", client.sessionId);
     
-    this.state.entities[client.sessionId].x = data.x;
-    this.state.entities[client.sessionId].y = data.y;
-    this.state.entities[client.sessionId].z = data.z;
+          this.state.entities[client.sessionId].x = message.data.x;
+          this.state.entities[client.sessionId].y = message.data.y;
+          this.state.entities[client.sessionId].z = message.data.z;
+      
+          const movementMessage: MovementMessage = message.data;
+          movementMessage.msg = "Approved";
+          this.send(client, [message.command, movementMessage]);
+      
+          console.log("x: %s y: %s z: %s", 
+                      this.state.entities[client.sessionId].x,
+                      this.state.entities[client.sessionId].y, 
+                      this.state.entities[client.sessionId].z);
 
-    const message = data;
-    message.msg = "Approved";
-    this.send(client, message);
-
-    console.log("x: %s y: %s z: %s", 
-                this.state.entities[client.sessionId].x,
-                this.state.entities[client.sessionId].y, 
-                this.state.entities[client.sessionId].z);
+        break;
+    }
   }
 
   async onLeave (client: Client, consented: boolean) {
