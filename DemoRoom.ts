@@ -16,12 +16,11 @@ class Message {
 }
 
 export class DemoRoom extends Room<State> {
-
   onCreate () {
     console.log("DemoRoom created!");
 
     this.setState(new State());
-    this.setSimulationInterval((dt) => this.state.update());
+    this.setSimulationInterval((deltaTime) => this.state.update(deltaTime));
     this.setPatchRate(1000 / 30);
   }
 
@@ -87,5 +86,4 @@ export class DemoRoom extends Room<State> {
   onDispose () {
     console.log("disposing DemoRoom...");
   }
-
 }
