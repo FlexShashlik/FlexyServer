@@ -1,4 +1,4 @@
-import { Room, Client } from "colyseus";
+import { Room, Client, generateId } from "colyseus";
 import { Schema, type } from "@colyseus/schema";
 import { State } from "./State";
 
@@ -8,6 +8,11 @@ class MovementMessage extends Schema {
   @type("number") y;
   @type("number") z;
   @type("string") msg;
+}
+
+class Message {
+  command: string;
+  data: any;
 }
 
 export class DemoRoom extends Room<State> {
@@ -25,7 +30,7 @@ export class DemoRoom extends Room<State> {
     this.state.createUser(client.sessionId);
   }
 
-  onMessage (client: Client, message: any) {
+  onMessage (client: Client, message: Message) {
     const entity = this.state.entities[client.sessionId];
 
     // skip dead players
@@ -44,13 +49,19 @@ export class DemoRoom extends Room<State> {
       
           const movementMessage: MovementMessage = message.data;
           movementMessage.msg = "Approved";
-          this.send(client, [message.command, movementMessage]);
+          message.data = movementMessage;
+
+          this.send(client, message);
       
           console.log("x: %s y: %s z: %s", 
                       this.state.entities[client.sessionId].x,
                       this.state.entities[client.sessionId].y, 
                       this.state.entities[client.sessionId].z);
 
+        break;
+
+      case "create_projectile":
+        this.state.createProjectile(message.data, client.sessionId);
         break;
     }
   }
