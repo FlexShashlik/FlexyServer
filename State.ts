@@ -3,6 +3,7 @@ import { Entity } from "./Entity";
 import { User } from "./User";
 import { Projectile } from "./Projectile";
 import { generateId } from "colyseus";
+import { isSphereIntersectsBox } from "./FlexyMath";
 
 export class State extends Schema {
     @type({ map: Entity })
@@ -30,6 +31,18 @@ export class State extends Schema {
                 
                 entity.x += Math.cos(entity.angle) * dP * deltaTime / 1000;
                 entity.z += Math.sin(entity.angle) * dP * deltaTime / 1000;
+
+                for(const hitId in this.entities) {
+                    const hitEntity = this.entities[hitId];
+
+                    if(hitId != entity.ownerSessionId && hitEntity instanceof User) {
+                        if(isSphereIntersectsBox(entity, hitEntity)) {
+                            // Collision detection processing
+                            console.log('HIT!!!!!!!!!!!!!!!!!!!!!!!!');
+                            delete this.entities[hitId];
+                        }
+                    }
+                }
             
                 if (entity.x >= WORLD_SIZE  ||
                     entity.x <= -WORLD_SIZE ||
