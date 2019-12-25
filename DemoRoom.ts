@@ -1,6 +1,7 @@
 import { Room, Client, generateId } from "colyseus";
 import { Schema, type } from "@colyseus/schema";
 import { State } from "./State";
+import { Entity } from "./Entity";
 
 class MovementMessage extends Schema {
   @type("uint32") stateNum;
@@ -20,8 +21,8 @@ export class DemoRoom extends Room<State> {
     console.log("DemoRoom created!");
 
     this.setState(new State());
-    this.setSimulationInterval((deltaTime) => this.state.update(deltaTime));
-    this.setPatchRate(1000 / 30);
+    this.setSimulationInterval(() => this.state.update(16.6));
+    this.setPatchRate(1000 / 1000);
   }
 
   onJoin (client: Client, options: any) {
@@ -33,7 +34,7 @@ export class DemoRoom extends Room<State> {
     const entity = this.state.entities[client.sessionId];
 
     // skip dead players
-    if (!entity) {
+    if (!entity || entity.health <= 0) {
       console.log("DEAD PLAYER ACTING...");
       return;
     }

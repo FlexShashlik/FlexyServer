@@ -35,11 +35,18 @@ export class State extends Schema {
                 for(const hitId in this.entities) {
                     const hitEntity = this.entities[hitId];
 
-                    if(hitId != entity.ownerSessionId && hitEntity instanceof User) {
+                    if(hitId != entity.ownerSessionId && hitEntity instanceof User && hitEntity.health > 0) {
                         if(isSphereIntersectsBox(entity, hitEntity)) {
                             // Collision detection processing
-                            console.log('HIT!!!!!!!!!!!!!!!!!!!!!!!!');
-                            delete this.entities[hitId];
+                            console.log(sessionId, "hit", hitId);
+
+                            hitEntity.health -= 20;
+                            if(hitEntity.health > 0) {
+                                console.log(hitId, "died");
+                            }
+
+                            // Destroy projectile
+                            delete this.entities[sessionId];
                         }
                     }
                 }
